@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vulntrack-db
+    environment:
+      POSTGRES_DB: vulntrack
+      POSTGRES_USER: vulntrack
+      POSTGRES_PASSWORD: vulntrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vulntrack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vulntrack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  vulntrack-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
