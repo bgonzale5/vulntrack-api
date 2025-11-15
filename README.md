@@ -185,10 +185,10 @@ Quarkus 3.29.0 arrancando con Flyway migrations y features instaladas:
 
 ## Documentación Complementaria
 
-📖 **[Ejemplos de Queries GraphQL](GRAPHQL_QUERIES.md)**  
+📖 **[Ejemplos de Queries GraphQL](docs/GRAPHQL_QUERIES.md)**  
 Colección completa de queries y mutations para probar la API. Incluye ejemplos por recurso (Users, Vendors, Products, CVEs) y casos de uso por rol.
 
-🔴 **[Vectores de Ataque Demostrados](ATTACKS.md)**  
+🔴 **[Vectores de Ataque Demostrados](docs/ATTACKS.md)**  
 Documentación técnica de 7 vulnerabilidades ejecutables:
 - SQL Injection (searchUsers, searchCVEs)
 - Broken Access Control (sin autenticación, escalación de privilegios)
