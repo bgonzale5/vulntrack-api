@@ -124,56 +124,94 @@ Para más detalles, ver [documentación de arquitectura](docs/architecture.md).
 
 ## Evidencia Visual del Desarrollo
 
-### GraphQL API Funcionando
+### 1. GraphQL API Funcionando
 
-Consulta de CVEs críticos con productos afectados:
+Consulta de CVEs críticos con productos afectados y sus fabricantes:
 
 ![GraphQL Query Success](docs/screenshots/01-graphql-query-success.png)
 
-### Validación de Domain Primitives
-
-Domain Primitive `CVEId` rechazando formato inválido (Secure by Design):
-
-![Domain Validation](docs/screenshots/02-domain-primitive-validation.png)
-
-### Demostración de Vulnerabilidad - SQL Injection
-
-SQL Injection en `searchUsers` permitiendo bypass completo:
-
-![SQL Injection](docs/screenshots/03-sql-injection-vulnerability.png)
-
-⚠️ **ADVERTENCIA**: Esta vulnerabilidad es intencional para fines demostrativos. Se mitigará en Fase 2.
-
-### Esquema de Base de Datos
-
-Estructura normalizada con constraints y relaciones:
-
-![Database Schema](docs/screenshots/04-database-schema.png)
-
-### Aplicación en Ejecución
-
-Quarkus 3.29.0 con banner personalizado del TFM:
-
-![Quarkus Startup](docs/screenshots/05-quarkus-startup.png)
-
-### Historial de Commits
-
-Desarrollo iterativo evidenciado en GitHub:
-
-![GitHub Commits](docs/screenshots/06-github-commits.png)
+**Demostración:** La API GraphQL retorna correctamente CVE-2023-12345 (Remote Code Execution in Windows 10) con severidad CRITICAL (9.8) y la lista completa de productos afectados.
 
 ---
 
+### 2. Validación de Domain Primitives (Secure by Design)
+
+Domain Primitive `CVEId` rechazando formato inválido con fail-fast:
+
+![Domain Validation](docs/screenshots/02-domain-primitive-validation.png)
+
+**Principio aplicado:** El Domain Primitive `CVEId` valida el formato CVE-YYYY-NNNNN en el constructor. Un objeto inválido **no puede ser creado**, previniendo datos corruptos en el sistema.
+
+---
+
+### 3. Demostración de Vulnerabilidad - SQL Injection
+
+SQL Injection en `searchUsers` permitiendo bypass completo de autenticación:
+
+![SQL Injection](docs/screenshots/03-sql-injection-vulnerability.png)
+
+⚠️ **ADVERTENCIA CRÍTICA**: Esta vulnerabilidad es **intencional** para fines demostrativos (Fase 1 - Baseline Vulnerable). La query `' OR '1'='1` retorna **TODOS** los usuarios con sus passwords en texto plano.
+
+**CVSS Score:** 9.8 (Critical)  
+**Mitigación:** Será implementada en Fase 2 usando Panache queries parametrizadas.
+
+---
+
+### 4. Esquema de Base de Datos
+
+Estructura normalizada con foreign keys, constraints y control de versiones (Flyway):
+
+![Database Schema](docs/screenshots/04-database-schema.png)
+
+**Arquitectura:**
+- 5 tablas principales: `users`, `vendors`, `products`, `cves`, `cve_affected_products`
+- Relaciones: ManyToOne (Product → Vendor), ManyToMany (CVE ↔ Product)
+- Constraints: UNIQUE (username, email, cve_id), CHECK (role, severity)
+- Histórico de migraciones: `flyway_schema_history`
+
+---
+
+### 5. Aplicación en Ejecución
+
+Quarkus 3.29.0 arrancando con Flyway migrations y features instaladas:
+
+![Quarkus Startup](docs/screenshots/05-quarkus-startup.png)
+
+**Tiempo de arranque:** 5.644s en modo dev  
+**Migraciones ejecutadas:** 2 (execution time: 0.031s)  
+**Features activas:** agroal, cdi, flyway, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-postgresql, narayana-jta, rest, smallrye-graphql
+
+---
+
+## Documentación Complementaria
+
+📖 **[Ejemplos de Queries GraphQL](GRAPHQL_QUERIES.md)**  
+Colección completa de queries y mutations para probar la API. Incluye ejemplos por recurso (Users, Vendors, Products, CVEs) y casos de uso por rol.
+
+🔴 **[Vectores de Ataque Demostrados](ATTACKS.md)**  
+Documentación técnica de 7 vulnerabilidades ejecutables:
+- SQL Injection (searchUsers, searchCVEs)
+- Broken Access Control (sin autenticación, escalación de privilegios)
+- Information Disclosure (passwords en texto plano)
+- Denial of Service (queries circulares, sin paginación)
+
+**IMPORTANTE:** Los ataques documentados son **intencionales** para fines académicos. Fase 1 = Baseline Vulnerable → Fase 2 = Mitigación.
+
+---
 
 ## Referencias
 
-- **Black Hat GraphQL** (Dolev Farhi & Nick Aleks, 2023)
-- **Secure by Design** (Manning, 2019)
-- **OWASP API Security Top 10**
+- **Black Hat GraphQL** (Dolev Farhi & Nick Aleks, 2023) - Capítulos 4, 5, 6, 7, 8
+- **Secure by Design** (Manning, 2019) - Domain Primitives, Fail-Fast
+- **OWASP API Security Top 10** (2023)
 - **OWASP GraphQL Cheat Sheet**
+- **CWE-89**: SQL Injection
+- **CWE-287**: Improper Authentication
+- **CWE-862**: Missing Authorization
+
+---
 
 ## Comandos Útiles
-
 ```bash
 # Compilar
 ./mvnw clean compile
@@ -194,14 +232,21 @@ docker-compose down
 docker-compose logs -f postgres
 ```
 
+---
+
 ## Notas del Desarrollo
 
-Este proyecto es parte del TFM "Seguridad en APIs GraphQL con Quarkus: Evaluación de Vulnerabilidades y Estrategias de Mitigación desde un Enfoque Secure by Design".
+Este proyecto es parte del TFM **"Seguridad en APIs GraphQL con Quarkus: Evaluación de Vulnerabilidades y Estrategias de Mitigación desde un Enfoque Secure by Design"**.
 
-**Desarrollo iterativo**: Cada fase se mantiene en su propia rama Git como evidencia académica del progreso.
+**Desarrollo iterativo:** Cada fase se mantiene en su propia rama Git como evidencia académica del progreso.
+
+- **Fase 1 (Actual):** Baseline vulnerable - API funcional sin controles de seguridad
+- **Fase 2 (Siguiente):** Security Hardening - JWT, RBAC, ABAC, Query Limiting
+- **Fase 3 (Final):** Testing & Validation - Automatización, benchmarking, documentación completa
 
 ---
 
-**Autor**: Bladimir Gonzales Miranda  
-**Director**: Rubén Pérez Chacón  
-**Universidad**: UNIR - Máster en Ciberseguridad
+**Autor:** Bladimir Gonzales Miranda  
+**Director:** Rubén Pérez Chacón  
+**Universidad:** UNIR - Máster en Ciberseguridad  
+**Fecha:** Noviembre 2024
