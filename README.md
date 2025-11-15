@@ -116,6 +116,55 @@ CVEId.of("CVE-2023-12345");  // Retorna CVEId válido
 
 Todos los Domain Primitives son inmutables (final class, no setters), previniendo modificaciones no controladas.
 
+### Arquitectura del Sistema
+
+![Architecture Diagram](docs/architecture.md)
+
+Para más detalles, ver [documentación de arquitectura](docs/architecture.md).
+
+## Evidencia Visual del Desarrollo
+
+### GraphQL API Funcionando
+
+Consulta de CVEs críticos con productos afectados:
+
+![GraphQL Query Success](docs/screenshots/01-graphql-query-success.png)
+
+### Validación de Domain Primitives
+
+Domain Primitive `CVEId` rechazando formato inválido (Secure by Design):
+
+![Domain Validation](docs/screenshots/02-domain-primitive-validation.png)
+
+### Demostración de Vulnerabilidad - SQL Injection
+
+SQL Injection en `searchUsers` permitiendo bypass completo:
+
+![SQL Injection](docs/screenshots/03-sql-injection-vulnerability.png)
+
+⚠️ **ADVERTENCIA**: Esta vulnerabilidad es intencional para fines demostrativos. Se mitigará en Fase 2.
+
+### Esquema de Base de Datos
+
+Estructura normalizada con constraints y relaciones:
+
+![Database Schema](docs/screenshots/04-database-schema.png)
+
+### Aplicación en Ejecución
+
+Quarkus 3.29.0 con banner personalizado del TFM:
+
+![Quarkus Startup](docs/screenshots/05-quarkus-startup.png)
+
+### Historial de Commits
+
+Desarrollo iterativo evidenciado en GitHub:
+
+![GitHub Commits](docs/screenshots/06-github-commits.png)
+
+---
+
+
 ## Referencias
 
 - **Black Hat GraphQL** (Dolev Farhi & Nick Aleks, 2023)
