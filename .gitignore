@@ -39,4 +39,4 @@ bin/
 *.db
 
 # Environment
-.env
+.envsrc/main/resources/privateKey.pem
