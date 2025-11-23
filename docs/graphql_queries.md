@@ -447,7 +447,7 @@ query {
   users {
     username
     email
-    passwordHash  # ⚠️ Passwords en texto plano visibles
+    passwordHash  # Passwords en texto plano visibles
   }
 }
 ```

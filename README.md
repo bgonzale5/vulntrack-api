@@ -150,7 +150,7 @@ SQL Injection en `searchUsers` permitiendo bypass completo de autenticación:
 
 ![SQL Injection](docs/screenshots/03-sql-injection-vulnerability.png)
 
-⚠️ **ADVERTENCIA CRÍTICA**: Esta vulnerabilidad es **intencional** para fines demostrativos (Fase 1 - Baseline Vulnerable). La query `' OR '1'='1` retorna **TODOS** los usuarios con sus passwords en texto plano.
+**ADVERTENCIA CRÍTICA**: Esta vulnerabilidad es **intencional** para fines demostrativos (Fase 1 - Baseline Vulnerable). La query `' OR '1'='1` retorna **TODOS** los usuarios con sus passwords en texto plano.
 
 **CVSS Score:** 9.8 (Critical)  
 **Mitigación:** Será implementada en Fase 2 usando Panache queries parametrizadas.
@@ -185,10 +185,10 @@ Quarkus 3.29.0 arrancando con Flyway migrations y features instaladas:
 
 ## Documentación Complementaria
 
-📖 **[Ejemplos de Queries GraphQL](docs/GRAPHQL_QUERIES.md)**  
+**[Ejemplos de Queries GraphQL](docs/graphql_queries.md)**  
 Colección completa de queries y mutations para probar la API. Incluye ejemplos por recurso (Users, Vendors, Products, CVEs) y casos de uso por rol.
 
-🔴 **[Vectores de Ataque Demostrados](docs/ATTACKS.md)**  
+**[Vectores de Ataque Demostrados](docs/attacks.md)**  
 Documentación técnica de 7 vulnerabilidades ejecutables:
 - SQL Injection (searchUsers, searchCVEs)
 - Broken Access Control (sin autenticación, escalación de privilegios)
