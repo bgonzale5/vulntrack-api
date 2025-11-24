@@ -30,8 +30,7 @@ public class AuthResource {
         User user = authService.authenticate(username, password);
 
         if (user == null) {
-            throw new GraphQLException("Credenciales inválidas",
-                    GraphQLException.ExceptionType.ExecutionException);
+            throw new IllegalArgumentException("Credenciales inválidas");
         }
 
         String token = authService.generateToken(user);
