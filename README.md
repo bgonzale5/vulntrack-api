@@ -198,11 +198,10 @@ Features activas: Panache, GraphQL, Flyway, PostgreSQL
 ---
 
 ## Documentación Complementaria
-
-**[GRAPHQL_QUERIES.md](GRAPHQL_QUERIES.md)**  
+**[GRAPHQL_QUERIES.md](docs/graphql_queries.md)**  
 Colección completa de queries y mutations para probar la API. Incluye ejemplos por recurso (Users, Vendors, Products, CVEs).
 
-**[ATTACKS.md](ATTACKS.md)**  
+**[ATTACKS.md](docs/attacks.md)**  
 Documentación técnica de 7 vulnerabilidades ejecutables:
 - SQL Injection (searchUsers, searchCVEs)
 - Broken Access Control (sin autenticación, escalación de privilegios)
