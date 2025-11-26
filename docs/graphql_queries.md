@@ -2,7 +2,72 @@
 
 Colección de queries y mutations de ejemplo para probar la API.
 
-**FASE 1**: Todas estas queries están SIN autenticación (vulnerable).
+**FASE 1**: Todas las queries estaban SIN autenticación (vulnerable).  
+**FASE 2**: Todas las queries requieren JWT token (excepto login).
+
+---
+
+## Autenticación
+
+### Login (Obtener JWT Token)
+```graphql
+mutation {
+  login(username: "admin", password: "admin123") {
+    token
+    userId
+    username
+    email
+    role
+  }
+}
+```
+
+**Respuesta esperada:**
+```json
+{
+  "data": {
+    "login": {
+      "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "userId": 1,
+      "username": "admin",
+      "email": "admin@vulntrack.io",
+      "role": "ADMIN"
+    }
+  }
+}
+```
+
+**Usuarios disponibles:**
+- `admin` / `admin123` (ADMIN)
+- `researcher` / `research123` (RESEARCHER)
+- `analyst` / `analyst123` (ANALYST)
+
+---
+
+## Configurar Headers para Queries Autenticadas
+
+Después de obtener el token, todas las queries deben incluir el header:
+```
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**En GraphQL UI (http://localhost:8080/q/graphql-ui/):**
+1. Ir a pestaña "Headers"
+2. Añadir: `Authorization`
+3. Valor: `Bearer <tu_token_aqui>`
+
+**En curl:**
+```bash
+curl -X POST http://localhost:8080/graphql \
+  -H "Authorization: Bearer " \
+  -H "Content-Type: application/json" \
+  -d '{"query": "query { cves { cveId title } }"}'
+```
+
+**En Postman:**
+1. Tab "Authorization"
+2. Type: "Bearer Token"
+3. Token: `<pegar_token>`
 
 ---
 
@@ -11,6 +76,7 @@ Colección de queries y mutations de ejemplo para probar la API.
 ### Usuarios
 
 #### Obtener todos los usuarios
+**RBAC: Solo ADMIN**
 ```graphql
 query {
   users {
@@ -21,25 +87,25 @@ query {
     role
     active
     createdAt
-    updatedAt
   }
 }
 ```
 
 #### Obtener usuario por ID
+**RBAC: Solo ADMIN**
 ```graphql
 query {
   user(id: 1) {
     id
     username
     email
-    fullName
     role
   }
 }
 ```
 
 #### Buscar usuario por username
+**RBAC: Solo ADMIN**
 ```graphql
 query {
   userByUsername(username: "admin") {
@@ -52,6 +118,7 @@ query {
 ```
 
 #### Obtener usuarios por rol
+**RBAC: Solo ADMIN**
 ```graphql
 query {
   usersByRole(role: RESEARCHER) {
@@ -63,11 +130,26 @@ query {
 }
 ```
 
+#### Buscar usuarios (SQL Injection MITIGADO)
+**RBAC: Solo ADMIN**
+```graphql
+query {
+  searchUsers(query: "admin") {
+    username
+    email
+  }
+}
+```
+
+**Fase 1 vulnerable:** `query: "' OR '1'='1"` retornaba todos los usuarios.  
+**Fase 2 seguro:** Búsqueda literal, no hay inyección SQL.
+
 ---
 
 ### Vendors (Fabricantes)
 
 #### Obtener todos los vendors
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   vendors {
@@ -81,6 +163,7 @@ query {
 ```
 
 #### Obtener vendor por ID
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   vendor(id: 1) {
@@ -88,11 +171,17 @@ query {
     name
     description
     website
+    products {
+      id
+      name
+      version
+    }
   }
 }
 ```
 
 #### Buscar vendor por nombre
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   vendorByName(name: "Microsoft") {
@@ -104,11 +193,24 @@ query {
 }
 ```
 
+#### Obtener solo vendors activos
+**RBAC: ANALYST, RESEARCHER, ADMIN**
+```graphql
+query {
+  activeVendors {
+    id
+    name
+    website
+  }
+}
+```
+
 ---
 
 ### Products (Productos)
 
 #### Obtener todos los productos
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   products {
@@ -116,6 +218,7 @@ query {
     name
     version
     description
+    active
     vendor {
       id
       name
@@ -124,7 +227,24 @@ query {
 }
 ```
 
+#### Obtener producto por ID
+**RBAC: ANALYST, RESEARCHER, ADMIN**
+```graphql
+query {
+  product(id: 1) {
+    id
+    name
+    version
+    vendor {
+      name
+      website
+    }
+  }
+}
+```
+
 #### Obtener productos de un vendor específico
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   productsByVendor(vendorId: 1) {
@@ -138,11 +258,25 @@ query {
 }
 ```
 
+#### Obtener solo productos activos
+**RBAC: ANALYST, RESEARCHER, ADMIN**
+```graphql
+query {
+  activeProducts {
+    id
+    name
+    version
+    active
+  }
+}
+```
+
 ---
 
 ### CVEs (Vulnerabilidades)
 
 #### Obtener todos los CVEs
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   cves {
@@ -166,6 +300,7 @@ query {
 ```
 
 #### Obtener CVE por ID
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   cve(id: 1) {
@@ -185,6 +320,7 @@ query {
 ```
 
 #### Buscar CVE por identificador CVE-YYYY-NNNNN
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   cveByCveId(cveId: "CVE-2023-12345") {
@@ -194,11 +330,13 @@ query {
     description
     severity
     cvssScore
+    publishedDate
   }
 }
 ```
 
 #### Obtener CVEs por severidad
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   cvesBySeverity(severity: CRITICAL) {
@@ -206,11 +344,13 @@ query {
     cveId
     title
     cvssScore
+    publishedDate
   }
 }
 ```
 
 #### Obtener solo CVEs críticos
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   criticalCVEs {
@@ -220,12 +360,16 @@ query {
     cvssScore
     affectedProducts {
       name
+      vendor {
+        name
+      }
     }
   }
 }
 ```
 
 #### Obtener CVEs recientes (últimos N días)
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   recentCVEs(days: 30) {
@@ -239,6 +383,7 @@ query {
 ```
 
 #### Buscar CVEs por rango de score
+**RBAC: ANALYST, RESEARCHER, ADMIN**
 ```graphql
 query {
   cvesByScoreRange(minScore: 7.0, maxScore: 10.0) {
@@ -251,6 +396,21 @@ query {
 }
 ```
 
+#### Buscar CVEs (SQL Injection MITIGADO)
+**RBAC: ANALYST, RESEARCHER, ADMIN**
+```graphql
+query {
+  searchCVEs(query: "Windows") {
+    cveId
+    title
+    severity
+  }
+}
+```
+
+**Fase 1 vulnerable:** `query: "Windows' OR '1'='1"` retornaba todos los CVEs.  
+**Fase 2 seguro:** Búsqueda parametrizada con Panache.
+
 ---
 
 ## MUTATIONS (Escritura)
@@ -258,13 +418,14 @@ query {
 ### Usuarios
 
 #### Crear nuevo usuario
+**RBAC: Solo ADMIN**
 ```graphql
 mutation {
   createUser(
-    username: "testuser"
-    email: "test@example.com"
-    fullName: "Test User"
-    password: "test123"
+    username: "newuser"
+    email: "newuser@example.com"
+    fullName: "New User"
+    password: "securepass123"
     role: ANALYST
   ) {
     id
@@ -275,10 +436,13 @@ mutation {
 }
 ```
 
-#### Actualizar rol de usuario (VULNERABLE: escalación de privilegios)
+**Fase 2:** Password se hashea automáticamente con BCrypt antes de guardar.
+
+#### Actualizar rol de usuario
+**RBAC: Solo ADMIN**
 ```graphql
 mutation {
-  updateUserRole(userId: 3, newRole: ADMIN) {
+  updateUserRole(userId: 3, newRole: RESEARCHER) {
     id
     username
     role
@@ -286,10 +450,26 @@ mutation {
 }
 ```
 
+**Fase 1 vulnerable:** Cualquiera podía hacerse ADMIN.  
+**Fase 2 seguro:** Solo ADMIN puede cambiar roles.
+
 #### Desactivar usuario
+**RBAC: Solo ADMIN**
 ```graphql
 mutation {
   deactivateUser(userId: 4) {
+    id
+    username
+    active
+  }
+}
+```
+
+#### Activar usuario
+**RBAC: Solo ADMIN**
+```graphql
+mutation {
+  activateUser(userId: 4) {
     id
     username
     active
@@ -302,6 +482,7 @@ mutation {
 ### Vendors
 
 #### Crear nuevo vendor
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   createVendor(
@@ -316,6 +497,7 @@ mutation {
 ```
 
 #### Actualizar vendor
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   updateVendor(
@@ -330,11 +512,20 @@ mutation {
 }
 ```
 
+#### Eliminar vendor
+**RBAC: Solo ADMIN**
+```graphql
+mutation {
+  deleteVendor(vendorId: 5)
+}
+```
+
 ---
 
 ### Products
 
 #### Crear nuevo producto
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   createProduct(
@@ -354,6 +545,7 @@ mutation {
 ```
 
 #### Actualizar producto
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   updateProduct(
@@ -368,11 +560,20 @@ mutation {
 }
 ```
 
+#### Eliminar producto
+**RBAC: Solo ADMIN**
+```graphql
+mutation {
+  deleteProduct(productId: 8)
+}
+```
+
 ---
 
 ### CVEs
 
 #### Crear nuevo CVE
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   createCVE(
@@ -391,7 +592,10 @@ mutation {
 }
 ```
 
+**Domain Primitive:** Si `cveId` no sigue formato CVE-YYYY-NNNNN, lanza error.
+
 #### Actualizar descripción de CVE
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   updateCVEDescription(
@@ -406,6 +610,7 @@ mutation {
 ```
 
 #### Actualizar severidad de CVE
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   updateCVESeverity(
@@ -422,9 +627,27 @@ mutation {
 ```
 
 #### Añadir producto afectado a un CVE
+**RBAC: RESEARCHER, ADMIN**
 ```graphql
 mutation {
   addAffectedProduct(cveId: 1, productId: 3) {
+    id
+    cveId
+    affectedProducts {
+      name
+      vendor {
+        name
+      }
+    }
+  }
+}
+```
+
+#### Remover producto afectado de un CVE
+**RBAC: RESEARCHER, ADMIN**
+```graphql
+mutation {
+  removeAffectedProduct(cveId: 1, productId: 3) {
     id
     cveId
     affectedProducts {
@@ -436,92 +659,255 @@ mutation {
 
 ---
 
-## VULNERABILIDADES DEMOSTRADAS (Fase 1)
+## Casos de Uso por Rol
 
-### 1. Sin Autenticación
-**Cualquiera puede ejecutar TODAS las queries.**
-
-Prueba:
+### Como ANALYST (Solo Lectura)
 ```graphql
+# 1. Login
+mutation {
+  login(username: "analyst", password: "analyst123") {
+    token
+    role
+  }
+}
+
+# 2. Consultar CVEs críticos (PERMITIDO)
+query {
+  criticalCVEs {
+    cveId
+    title
+    cvssScore
+  }
+}
+
+# 3. Intentar crear CVE (PROHIBIDO - Error 403)
+mutation {
+  createCVE(
+    cveId: "CVE-2024-88888"
+    title: "Test"
+    severity: HIGH
+    cvssScore: 7.0
+    publishedDate: "2024-01-01"
+  ) {
+    id
+  }
+}
+# Respuesta: Error 403 Forbidden
+```
+
+---
+
+### Como RESEARCHER (Lectura + Escritura CVEs/Products/Vendors)
+```graphql
+# 1. Login
+mutation {
+  login(username: "researcher", password: "research123") {
+    token
+    role
+  }
+}
+
+# 2. Consultar CVEs (PERMITIDO)
+query {
+  cves {
+    cveId
+    title
+  }
+}
+
+# 3. Crear nuevo CVE (PERMITIDO)
+mutation {
+  createCVE(
+    cveId: "CVE-2024-77777"
+    title: "New Vulnerability"
+    severity: MEDIUM
+    cvssScore: 5.5
+    publishedDate: "2024-11-20"
+  ) {
+    id
+    cveId
+  }
+}
+
+# 4. Intentar crear usuario (PROHIBIDO - Error 403)
+mutation {
+  createUser(
+    username: "hacker"
+    email: "hack@test.com"
+    fullName: "Hacker"
+    password: "hack123"
+    role: ADMIN
+  ) {
+    id
+  }
+}
+# Respuesta: Error 403 Forbidden
+```
+
+---
+
+### Como ADMIN (Control Total)
+```graphql
+# 1. Login
+mutation {
+  login(username: "admin", password: "admin123") {
+    token
+    role
+  }
+}
+
+# 2. Ver todos los usuarios (PERMITIDO)
 query {
   users {
     username
-    email
+    role
+  }
+}
+
+# 3. Crear nuevo usuario (PERMITIDO)
+mutation {
+  createUser(
+    username: "newadmin"
+    email: "newadmin@vulntrack.io"
+    fullName: "New Admin"
+    password: "admin456"
+    role: ADMIN
+  ) {
+    id
+    username
+  }
+}
+
+# 4. Cambiar rol de usuario (PERMITIDO)
+mutation {
+  updateUserRole(userId: 3, newRole: RESEARCHER) {
+    username
+    role
+  }
+}
+
+# 5. Eliminar vendor (PERMITIDO)
+mutation {
+  deleteVendor(vendorId: 5)
+}
+```
+
+---
+
+## Errores Comunes
+
+### Error 401 Unauthorized
+```json
+{
+  "errors": [
+    {
+      "message": "Unauthorized"
+    }
+  ]
+}
+```
+
+**Causa:** Token JWT no proporcionado o inválido.  
+**Solución:** Ejecutar mutation `login` y añadir header `Authorization: Bearer <token>`.
+
+---
+
+### Error 403 Forbidden
+```json
+{
+  "errors": [
+    {
+      "message": "Forbidden"
+    }
+  ]
+}
+```
+
+**Causa:** Usuario autenticado pero sin permisos para esta operación.  
+**Solución:** Verificar matriz de permisos. Por ejemplo, ANALYST no puede crear CVEs.
+
+---
+
+### Error de Validación (Domain Primitive)
+```json
+{
+  "errors": [
+    {
+      "message": "CVE ID debe seguir el formato CVE-YYYY-NNNNN (ej: CVE-2023-12345)",
+      "path": ["createCVE"]
+    }
+  ]
+}
+```
+
+**Causa:** Valor inválido detectado por Domain Primitive.  
+**Solución:** Corregir el formato del input según las reglas de validación.
+
+---
+
+### Credenciales Inválidas
+```json
+{
+  "errors": [
+    {
+      "message": "Credenciales inválidas",
+      "path": ["login"]
+    }
+  ]
+}
+```
+
+**Causa:** Username o password incorrectos.  
+**Solución:** Verificar credenciales. Los passwords correctos son: admin123, research123, analyst123.
+
+---
+
+## Comparativa Fase 1 vs Fase 2
+
+### Fase 1 (Baseline Vulnerable)
+
+Todas las queries funcionaban sin autenticación:
+```graphql
+# Sin headers, sin token
+query {
+  users {
+    username
     passwordHash  # Passwords en texto plano visibles
   }
 }
 ```
 
-### 2. Sin Autorización
-**Un ANALYST puede convertirse en ADMIN.**
-```graphql
-mutation {
-  updateUserRole(userId: 3, newRole: ADMIN) {
-    username
-    role
-  }
-}
-```
+Resultado: Retornaba todos los usuarios con passwords.
 
-### 3. Introspection Habilitada
-**Un atacante puede mapear toda la API.**
-```graphql
-query {
-  __schema {
-    types {
-      name
-      fields {
-        name
-        type {
-          name
-        }
-      }
-    }
-  }
-}
-```
+---
 
-### 4. Sin Query Depth Limiting
-**Consultas profundamente anidadas pueden causar DoS.**
-```graphql
-query {
-  cves {
-    affectedProducts {
-      vendor {
-        # Se puede anidar indefinidamente
-      }
-    }
-  }
-}
-```
+### Fase 2 (Security Hardening)
 
-### 5. Sin Paginación
-**Se pueden obtener TODOS los registros de una vez.**
+La misma query sin autenticación:
 ```graphql
 query {
   users {
-    id
-    # Sin límite, retorna todo
+    username
   }
 }
 ```
 
+Resultado: Error 401 Unauthorized.
+
+Con token JWT pero rol ANALYST:
+```graphql
+# Authorization: Bearer 
+query {
+  users {
+    username
+  }
+}
+```
+
+Resultado: Error 403 Forbidden (solo ADMIN puede ver usuarios).
+
 ---
 
-## NOTAS PARA LA FASE 2
-
-En la Fase 2 implementaremos:
-
-- JWT Authentication
-- `@RolesAllowed` en mutations
-- Field-level authorization
-- Query depth limiting
-- Query complexity analysis
-- Introspection disabled
-- Paginación
-
----
-
-**Autor**: Bladimir Gonzales Miranda  
-**TFM**: Seguridad en APIs GraphQL con Quarkus  
-**Universidad**: UNIR - Máster en Ciberseguridad
+Autor: Bladimir Gonzales Miranda  
+TFM: Seguridad en APIs GraphQL con Quarkus  
+Universidad: UNIR - Máster en Ciberseguridad
